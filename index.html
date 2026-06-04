@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arcgis-application</title>
+    <link href="style.css" rel="stylesheet"></link>
+    <script type="module" src="https://js.arcgis.com/5.0/"></script>
+    
+    <!-- ArcGIS Theme -->
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/5.0/esri/themes/dark/main.css"
+    />
+
+    <!-- Calcite -->
+    <script
+      type="module"
+      src="https://js.arcgis.com/calcite-components/3.0.3/calcite.esm.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/calcite-components/3.0.3/calcite.css"
+    />  
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
+  </head>
+  <body>
+    <calcite-shell content-behind>
+      <calcite-shell-panel
+        id="shell-panel-nav"
+        slot="panel-end"
+        display-mode="float"
+        height="l"
+      >
+        <calcite-panel id="app-heading" hidden>
+          <calcite-icon
+            id="logo-icon"
+            slot="header-actions-start"
+            icon="explore"
+            text-label="explore"
+          ></calcite-icon>
+          <calcite-action-bar
+            id="map-actions"
+            slot="action-bar"
+            layout="horizontal"
+            expand-disabled
+          >
+            <calcite-action
+              icon="search"
+              text="Search"
+              data-action-id="search"
+            ></calcite-action>
+            <calcite-action
+              icon="layers"
+              text="Layers"
+              data-action-id="layers"
+            ></calcite-action>
+            <calcite-action
+              icon="basemap"
+              text="Basemaps"
+              data-action-id="basemaps"
+            ></calcite-action>
+            <calcite-action
+              icon="legend"
+              text="Legend"
+              data-action-id="legend"
+            ></calcite-action>
+            <calcite-action
+              icon="dashboard"
+              text="Dashboard"
+              data-action-id="dashboard"
+            ></calcite-action>
+            <calcite-action
+              icon="bookmark"
+              text="Bookmarks"
+              data-action-id="bookmarks"
+            ></calcite-action>
+            <calcite-action
+              icon="print"
+              text="Print"
+              data-action-id="print"
+            ></calcite-action>
+            <calcite-action
+              icon="information"
+              text="About"
+              data-action-id="information"
+            ></calcite-action>
+          </calcite-action-bar>
+        </calcite-panel>
+
+        <calcite-block expanded heading="Search" data-block-id="search" hidden>
+          <arcgis-search
+            id="searchEl"
+            reference-element="mapEl"
+          ></arcgis-search>
+        </calcite-block>
+
+        <calcite-block expanded heading="Layers" data-block-id="layers" hidden>
+          <arcgis-layer-list
+            drag-enabled
+            reference-element="mapEl"
+            visibility-appearance="checkbox"
+          ></arcgis-layer-list>
+        </calcite-block>
+
+        <calcite-block
+          expanded
+          heading="Basemaps"
+          data-block-id="basemaps"
+          hidden
+        >
+          <arcgis-basemap-gallery
+            reference-element="mapEl"
+          ></arcgis-basemap-gallery>
+        </calcite-block>
+        <calcite-block expanded heading="Legend" data-block-id="legend" hidden>
+          <arcgis-legend
+            legend-style="classic"
+            reference-element="mapEl"
+          ></arcgis-legend>
+        </calcite-block>
+
+        <calcite-block
+          expanded
+          heading="Dashboard"
+          data-block-id="dashboard"
+          hidden
+        >
+          <div class="dashboard">
+            <div class="stat-card">
+              <span class="stat-label">Total Governorates</span>
+              <span class="stat-value" id="total-count">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Visible in Map</span>
+              <span class="stat-value" id="visible-count">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Population in View</span>
+              <span class="stat-value" id="population-sum">—</span>
+            </div>
+          </div>
+        </calcite-block>
+        <calcite-block
+          expanded
+          heading="Bookmarks"
+          data-block-id="bookmarks"
+          hidden
+        >
+          <arcgis-bookmarks
+            editing-enabled="false"
+            reference-element="mapEl"
+          ></arcgis-bookmarks>
+        </calcite-block>
+        <calcite-block expanded heading="Print" data-block-id="print" hidden>
+          <arcgis-print
+            allowed-formats="all"
+            allowed-layouts="all"
+            include-default-templates="false"
+            reference-element="mapEl"
+          ></arcgis-print>
+        </calcite-block>
+
+        <calcite-block
+          expanded
+          heading="About the data"
+          data-block-id="information"
+          hidden
+        >
+          <calcite-card id="card-content">
+            <img id="card-thumbnail" alt="Webmap thumbnail" slot="thumbnail" />
+            <div id="card-heading" slot="heading">
+            </div>
+            <div id="card-description" slot="description">
+            </div>
+            <div id="card-tags" slot="footer-end">
+            </div>
+          </calcite-card>
+        </calcite-block>
+      </calcite-shell-panel>
+
+      <arcgis-map id="mapEl"
+        basemap="dark-gray-vector"
+        center="31.2357,30.0444"
+        zoom="5">
+        <arcgis-zoom slot="top-left"></arcgis-zoom>
+      </arcgis-map>
+      <!-- Sidebar -->
+      <calcite-shell-panel slot="panel-start" width-scale="m">
+          <calcite-panel heading="Report an Issue">
+              <div class="sidebar-content">
+                  <calcite-label>
+                      Issue Type
+                      <calcite-select id="issueTypeSelect">
+                          <calcite-option value="Violating Building">Violating Building</calcite-option>
+                          <calcite-option value="Street Issue">Street Issue</calcite-option>
+                      </calcite-select>
+                    </calcite-label>
+                      <calcite-label>
+                        Description
+                        <calcite-input
+                          id="issueDescription"
+                          placeholder="Enter the description here"
+                          icon="pencil"
+                          clearable>
+                        </calcite-input>
+                      </calcite-label>
+                      <calcite-button id="reportLocationBtn" icon-start="pin" width="full">
+                        Click map location
+                      </calcite-button>
+                      <calcite-notice id="reportStatus" hidden scale="s">
+                        <div slot="message"></div>
+                      </calcite-notice>
+              </div>
+          </calcite-panel>
+      </calcite-shell-panel>
+    </calcite-shell>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
