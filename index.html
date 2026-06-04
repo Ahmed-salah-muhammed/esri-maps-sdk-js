@@ -7,13 +7,11 @@
     <link href="style.css" rel="stylesheet"></link>
     <script type="module" src="https://js.arcgis.com/5.0/"></script>
     
-    <!-- ArcGIS Theme -->
     <link
       rel="stylesheet"
       href="https://js.arcgis.com/5.0/esri/themes/dark/main.css"
     />
 
-    <!-- Calcite -->
     <script
       type="module"
       src="https://js.arcgis.com/calcite-components/3.0.3/calcite.esm.js"
@@ -54,6 +52,11 @@
               icon="layers"
               text="Layers"
               data-action-id="layers"
+            ></calcite-action>
+            <calcite-action
+              icon="filter"
+              text="Filter Issues"
+              data-action-id="filter"
             ></calcite-action>
             <calcite-action
               icon="basemap"
@@ -101,6 +104,17 @@
             reference-element="mapEl"
             visibility-appearance="checkbox"
           ></arcgis-layer-list>
+        </calcite-block>
+
+        <calcite-block expanded heading="Filter Issues" data-block-id="filter" hidden>
+          <calcite-label>
+            Show issue type
+            <calcite-select id="issueFilter">
+              <calcite-option value="all">All issues</calcite-option>
+              <calcite-option value="0">Violating Building</calcite-option>
+              <calcite-option value="1">Street Issue</calcite-option>
+            </calcite-select>
+          </calcite-label>
         </calcite-block>
 
         <calcite-block
@@ -185,28 +199,41 @@
         zoom="5">
         <arcgis-zoom slot="top-left"></arcgis-zoom>
       </arcgis-map>
-      <!-- Sidebar -->
-      <calcite-shell-panel slot="panel-start" width-scale="m">
+      <calcite-shell-panel id="report-panel" slot="panel-start" width-scale="m">
           <calcite-panel heading="Report an Issue">
+              <calcite-action
+                id="close-report"
+                slot="header-actions-end"
+                icon="x"
+                text="Hide panel"
+              ></calcite-action>
               <div class="sidebar-content">
                   <calcite-label>
                       Issue Type
                       <calcite-select id="issueTypeSelect">
-                          <calcite-option value="Violating Building">Violating Building</calcite-option>
-                          <calcite-option value="Street Issue">Street Issue</calcite-option>
+                          <calcite-option value="0">Violating Building</calcite-option>
+                          <calcite-option value="1">Street Issue</calcite-option>
                       </calcite-select>
                     </calcite-label>
                       <calcite-label>
                         Description
-                        <calcite-input
+                        <calcite-text-area
+                          required
                           id="issueDescription"
                           placeholder="Enter the description here"
-                          icon="pencil"
-                          clearable>
-                        </calcite-input>
+                          rows="3">
+                        </calcite-text-area>
                       </calcite-label>
                       <calcite-button id="reportLocationBtn" icon-start="pin" width="full">
                         Click map location
+                      </calcite-button>
+                      <calcite-button
+                        id="submitReportBtn"
+                        icon-start="check"
+                        kind="brand"
+                        width="full"
+                        disabled>
+                        Submit report
                       </calcite-button>
                       <calcite-notice id="reportStatus" hidden scale="s">
                         <div slot="message"></div>
@@ -215,6 +242,14 @@
           </calcite-panel>
       </calcite-shell-panel>
     </calcite-shell>
+    <calcite-button
+      id="open-report"
+      icon-start="plus-circle"
+      kind="brand"
+      hidden
+    >
+      Report
+    </calcite-button>
     <script type="module" src="app.js"></script>
   </body>
 </html>

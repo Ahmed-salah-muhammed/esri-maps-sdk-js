@@ -30,13 +30,14 @@ const SimpleLineSymbol = await $arcgis.import(
 const LayerSearchSource = await $arcgis.import(
   "@arcgis/core/widgets/Search/LayerSearchSource.js",
 );
+const Graphic = await $arcgis.import("@arcgis/core/Graphic.js");
 
 const reportingRenderer = new UniqueValueRenderer({
   field: "IssueType",
   legendOptions: { title: "Reported Issues" },
   uniqueValueInfos: [
     {
-      value: "Violating Building",
+      value: 0, // Violating Building
       label: "Violating Building",
       symbol: new SimpleMarkerSymbol({
         style: "square",
@@ -46,7 +47,7 @@ const reportingRenderer = new UniqueValueRenderer({
       }),
     },
     {
-      value: "Street Issue",
+      value: 1, // Street Issue
       label: "Street Issue",
       symbol: new SimpleMarkerSymbol({
         style: "circle",
@@ -87,7 +88,7 @@ const classBreaksRenderer = new ClassBreaksRenderer({
         color: "#1b7837",
         outline: { color: "white", width: 0.5 },
       }),
-      label: "< 143,180 (below x̄ − σ)",
+      label: "< 143,180",
     },
     {
       minValue: 143180,
@@ -96,7 +97,7 @@ const classBreaksRenderer = new ClassBreaksRenderer({
         color: "#80ac7b",
         outline: { color: "white", width: 0.5 },
       }),
-      label: "143,180 – 2,743,595 (below mean)",
+      label: "143,180 – 2,743,595",
     },
     {
       minValue: 2743595,
@@ -105,7 +106,7 @@ const classBreaksRenderer = new ClassBreaksRenderer({
         color: "#f7f7f7",
         outline: { color: "white", width: 0.5 },
       }),
-      label: "2,743,595 – 5,344,010 (around mean)",
+      label: "2,743,595 – 5,344,010",
     },
     {
       minValue: 5344010,
@@ -114,7 +115,7 @@ const classBreaksRenderer = new ClassBreaksRenderer({
         color: "#945ead",
         outline: { color: "white", width: 0.5 },
       }),
-      label: "5,344,010 – 7,944,425 (between σ and 2σ)",
+      label: "5,344,010 – 7,944,425",
     },
     {
       minValue: 7944425,
@@ -123,13 +124,13 @@ const classBreaksRenderer = new ClassBreaksRenderer({
         color: "#762a83",
         outline: { color: "white", width: 0.5 },
       }),
-      label: "> 7,944,425 (above 2σ)",
+      label: "> 7,944,425",
     },
   ],
 });
 
 const options = {
-  duration: 3000, // Duration in 3 seconds
+  duration: 5000, // goTo animation duration in milliseconds (5s)
   easing: "ease-in-out",
 };
 
@@ -190,7 +191,6 @@ await new Promise((resolve) => {
 const view = mapEl.view;
 const mymap = mapEl.map;
 
-// Add the FeatureLayer OBJECTS (not the raw URL string) — Governorates under, Issues on top.
 mymap.addMany([EgyptGovLayer, reportingLayer]);
 
 view.goTo(
@@ -224,7 +224,6 @@ if (searchEl) {
   ];
 }
 
-// Dashboard Counts
 const totalEl = document.getElementById("total-count");
 const visibleEl = document.getElementById("visible-count");
 const popEl = document.getElementById("population-sum");
@@ -289,6 +288,9 @@ const handleActionBarClick = ({ target }) => {
   if (target.tagName !== "CALCITE-ACTION") {
     return;
   }
+  if (!target.dataset.actionId) {
+    return;
+  }
   if (activeWidget) {
     document.querySelector(`[data-action-id=${activeWidget}]`).active = false;
     document.querySelector(`[data-block-id=${activeWidget}]`).hidden = true;
@@ -309,15 +311,24 @@ document
 const issueTypeSelect = document.getElementById("issueTypeSelect");
 const issueDescription = document.getElementById("issueDescription");
 const reportLocationBtn = document.getElementById("reportLocationBtn");
+const submitReportBtn = document.getElementById("submitReportBtn");
 const reportStatus = document.getElementById("reportStatus");
 
 let placingReport = false;
 let clickHandle = null;
-
+let pendingPoint = null;
+let pendingGraphic = null;
 const showStatus = (message, kind = "info") => {
   reportStatus.kind = kind; // "success" | "danger" | "warning" | "info"
   reportStatus.querySelector("[slot=message]").textContent = message;
   reportStatus.hidden = false;
+};
+
+const clearPendingGraphic = () => {
+  if (pendingGraphic) {
+    view.graphics.remove(pendingGraphic);
+    pendingGraphic = null;
+  }
 };
 
 const stopPlacing = () => {
@@ -332,13 +343,43 @@ const stopPlacing = () => {
   }
 };
 
-const submitReport = async (mapPoint) => {
-  const newFeature = {
+const updateSubmitState = () => {
+  const ready = !!pendingPoint && issueDescription.value.trim().length > 0;
+  submitReportBtn.disabled = !ready;
+};
+
+const setPendingLocation = (mapPoint) => {
+  pendingPoint = mapPoint;
+  clearPendingGraphic();
+  pendingGraphic = new Graphic({
     geometry: mapPoint,
+    symbol: new SimpleMarkerSymbol({
+      style: "diamond",
+      color: "#f4a300",
+      size: 14,
+      outline: new SimpleLineSymbol({ width: 1.5, color: "#ffffff" }),
+    }),
+  });
+  view.graphics.add(pendingGraphic);
+  updateSubmitState(); // enable Submit only if the description is also filled
+  showStatus(
+    issueDescription.value.trim()
+      ? "Ready — click Submit to save the report."
+      : "Location set. Add a description to enable Submit.",
+    "info",
+  );
+};
+
+const submitReport = async () => {
+  if (submitReportBtn.disabled) return; // guard: fields not all ready yet
+  submitReportBtn.loading = true;
+
+  const newFeature = {
+    geometry: pendingPoint,
     attributes: {
-      IssueType: issueTypeSelect.value,
-      Description: issueDescription.value || null,
-      ReportedAt: Date.now(),
+      IssueType: Number(issueTypeSelect.value),
+      Description: issueDescription.value.trim(),
+      ReportedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
     },
   };
 
@@ -351,11 +392,15 @@ const submitReport = async (mapPoint) => {
 
     showStatus("Issue reported successfully.", "success");
     issueDescription.value = "";
+    س;
+    clearPendingGraphic();
+    pendingPoint = null;
+    updateSubmitState();
   } catch (err) {
     console.error("applyEdits failed:", err);
     showStatus("Failed to save the report. Check the layer fields.", "danger");
   } finally {
-    stopPlacing();
+    submitReportBtn.loading = false;
   }
 };
 
@@ -370,11 +415,36 @@ reportLocationBtn.addEventListener("click", () => {
   reportLocationBtn.iconStart = "x";
   reportLocationBtn.textContent = "Click on the map… (cancel)";
   view.container.style.cursor = "crosshair";
-  showStatus("Click a location on the map to drop the report.", "info");
+  showStatus("Click a location on the map to set the report position.", "info");
 
   clickHandle = view.on("click", (event) => {
     event.stopPropagation();
-    reportLocationBtn.loading = true;
-    submitReport(event.mapPoint);
+    setPendingLocation(event.mapPoint);
+    stopPlacing();
   });
+});
+
+issueDescription.addEventListener("calciteTextAreaInput", updateSubmitState);
+issueTypeSelect.addEventListener("calciteSelectChange", updateSubmitState);
+
+submitReportBtn.addEventListener("click", submitReport);
+
+const reportPanel = document.getElementById("report-panel");
+const closeReportBtn = document.getElementById("close-report");
+const openReportBtn = document.getElementById("open-report");
+
+const setReportPanelVisible = (visible) => {
+  reportPanel.hidden = !visible;
+  openReportBtn.hidden = visible;
+};
+
+closeReportBtn.addEventListener("click", () => setReportPanelVisible(false));
+openReportBtn.addEventListener("click", () => setReportPanelVisible(true));
+
+// chosen IssueType (the coded-domain value 0 / 1), or all of them.
+const issueFilter = document.getElementById("issueFilter");
+issueFilter.addEventListener("calciteSelectChange", () => {
+  const value = issueFilter.value;
+  reportingLayer.definitionExpression =
+    value === "all" ? null : `IssueType = ${Number(value)}`;
 });
